@@ -662,9 +662,11 @@ let ctx, pdfCtx, drawingCtx;
 let pdfCanvas, drawingCanvas;
 let shiftPressed = false;
 let ctrlPressed = false;
+let altPressed = false;
 let currentUser = 'user1';
 let activeTextElement = null;
 let currentArrowColor = '#ff0000'; // Default red
+let boxSize = 30; // Size of the square box
 
 // Initialize
 window.onload = async () => {
@@ -737,7 +739,7 @@ function setupEventListeners() {
     document.getElementById('addExcludeBtn').addEventListener('click', addExcludedPage);
     
     // Drawing events with mouse button detection
-    drawingCanvas.addEventListener('mousedown', startDrawingWithButton);
+    drawingCanvas.addEventListener('mousedown', handleMouseDown);
     drawingCanvas.addEventListener('mousemove', draw);
     drawingCanvas.addEventListener('mouseup', stopDrawing);
     drawingCanvas.addEventListener('mouseleave', stopDrawing);
@@ -755,22 +757,35 @@ function setupEventListeners() {
     document.addEventListener('mousedown', handleOutsideClick);
 }
 
-function startDrawingWithButton(e) {
+function handleMouseDown(e) {
     e.preventDefault();
     
-    // Determine arrow color based on mouse button and Ctrl key
+    // Check for Alt key for box creation/deletion
+    if (altPressed) {
+        const coords = getCanvasCoordinates(e.clientX, e.clientY);
+        
+        // Check if clicking on an existing box
+        const boxIndex = findBoxAtPosition(coords.x, coords.y);
+        
+        if (boxIndex !== -1) {
+            // Remove existing box
+            removeBox(boxIndex);
+        } else {
+            // Create new box
+            createBox(coords.x, coords.y);
+        }
+        return;
+    }
+    
+    // Normal drawing for other tools
     if (currentTool === 'arrow') {
         if (ctrlPressed && e.button === 2) {
-            // Ctrl + Right click - green
             currentArrowColor = '#00ff00';
         } else if (ctrlPressed && e.button === 0) {
-            // Ctrl + Left click - yellow
             currentArrowColor = '#ffff00';
         } else if (e.button === 2) {
-            // Right click only - blue
             currentArrowColor = '#0000ff';
         } else if (e.button === 0) {
-            // Left click only - red
             currentArrowColor = '#ff0000';
         }
     } else {
@@ -778,6 +793,55 @@ function startDrawingWithButton(e) {
     }
     
     startDrawing(e);
+}
+
+function findBoxAtPosition(x, y) {
+    if (!drawings[currentPage]) return -1;
+    
+    for (let i = 0; i < drawings[currentPage].length; i++) {
+        const item = drawings[currentPage][i];
+        if (item.type === 'box') {
+            // Check if click is inside the box
+            if (x >= item.x && x <= item.x + boxSize &&
+                y >= item.y && y <= item.y + boxSize) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+function createBox(x, y) {
+    if (!drawings[currentPage]) {
+        drawings[currentPage] = [];
+        history[currentPage] = [];
+    }
+    
+    saveToHistory();
+    
+    drawings[currentPage].push({
+        type: 'box',
+        x: x - boxSize / 2,
+        y: y - boxSize / 2,
+        size: boxSize,
+        color: '#ffb347' // Light orange color
+    });
+    
+    saveUserData();
+    redrawCurrentPage();
+    updatePageStatus();
+}
+
+function removeBox(index) {
+    if (!drawings[currentPage]) return;
+    
+    saveToHistory();
+    
+    drawings[currentPage].splice(index, 1);
+    
+    saveUserData();
+    redrawCurrentPage();
+    updatePageStatus();
 }
 
 function openSettings() {
@@ -909,6 +973,11 @@ function handleKeyDown(e) {
         ctrlPressed = true;
     }
     
+    if (e.key === 'Alt') {
+        altPressed = true;
+        drawingCanvas.style.cursor = 'crosshair';
+    }
+    
     if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
         undoLastAction();
@@ -932,6 +1001,11 @@ function handleKeyUp(e) {
     
     if (e.key === 'Control') {
         ctrlPressed = false;
+    }
+    
+    if (e.key === 'Alt') {
+        altPressed = false;
+        drawingCanvas.style.cursor = 'crosshair';
     }
 }
 
@@ -1266,6 +1340,11 @@ function redrawCurrentPage() {
                 drawingCtx.strokeStyle = item.color;
                 drawingCtx.lineWidth = item.width;
                 drawingCtx.stroke();
+            } else if (item.type === 'box') {
+                drawingCtx.strokeStyle = item.color;
+                drawingCtx.fillStyle = item.color + '80'; // Add transparency
+                drawingCtx.fillRect(item.x, item.y, item.size, item.size);
+                drawingCtx.strokeRect(item.x, item.y, item.size, item.size);
             }
         });
     }
