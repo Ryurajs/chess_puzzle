@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Puzzle Solver - Multi-User Drawing</title>
+    <link rel="icon" type="image/x-icon" href="chess_puzzles/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="chess_puzzles/favicon.ico">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { 
+            background: #2d2d2d;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* Main container - now scrollable */
+        .game-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        
+        /* Flex layout */
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        /* Left Sidebar - Fixed width, sticky */
+        .sidebar {
+            width: 320px;
+            background: #333;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            color: white;
+            position: sticky;
+            top: 20px;
+            flex-shrink: 0;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #444;
+            border-radius: 4px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #ff0000;
+            border-radius: 4px;
+        }
+        
+        .user-section {
+            background: #444;
+            border-radius: 12px;
+            padding: 15px;
+        }
+        
+        .user-selector {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background: #555;
+            color: white;
+            border: 2px solid #ff0000;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        .user-selector option {
+            background: #444;
+            color: white;
+        }
+        
+        .user-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+        
+        .page-section {
+            background: #444;
+            border-radius: 12px;
+            padding: 15px;
+        }
+        
+        .page-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .page-btn {
+            background: #666;
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .page-btn:hover:not(:disabled) {
+            background: #ff0000;
+            transform: scale(1.1);
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .page-display {
+            background: #555;
+            border-radius: 30px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffaa00;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .jump-controls {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        
+        .jump-input {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 30px;
+            border: none;
+            background: #555;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .jump-input:focus {
+            border: 2px solid #ff0000;
+        }
+        
+        .jump-btn {
+            background: #ff0000;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        
+        .jump-btn:hover {
+            background: #ff3333;
+            transform: scale(1.02);
+        }
+        
+        .status-indicator {
+            font-size: 13px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .status-completed {
+            background: #1e4a1e;
+            color: #4caf50;
+        }
+        
+        .status-incomplete {
+            background: #4a1e1e;
+            color: #ff6b6b;
+        }
+        
+        .action-btn {
+            background: #ff0000;
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: 0.2s;
+            width: 100%;
+            font-size: 14px;
+        }
+        
+        .action-btn:hover {
+            background: #ff3333;
+            transform: scale(1.02);
+        }
+        
+        .action-btn.secondary {
+            background: #555;
+        }
+        
+        .action-btn.secondary:hover {
+            background: #666;
+        }
+        
+        .tools-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .tool-item {
+            background: #555;
+            border: 2px solid transparent;
+            color: white;
+            padding: 12px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            transition: 0.2s;
+            font-size: 12px;
+        }
+        
+        .tool-item.active {
+            border-color: #ff0000;
+            background: #666;
+            box-shadow: 0 0 10px #ff0000;
+        }
+        
+        .tool-item:hover {
+            background: #666;
+        }
+        
+        .tool-icon {
+            font-size: 24px;
+        }
+        
+        /* Modal Dialog */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #333;
+            border-radius: 16px;
+            padding: 25px;
+            width: 400px;
+            max-width: 90%;
+            color: white;
+            border: 2px solid #ff0000;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #444;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        
+        .settings-row label {
+            width: 80px;
+            color: #aaa;
+        }
+        
+        .settings-row input[type="color"] {
+            width: 60px;
+            height: 40px;
+            border-radius: 4px;
+            border: 2px solid #ff0000;
+            cursor: pointer;
+        }
+        
+        .settings-row input[type="range"] {
+            flex: 1;
+            height: 5px;
+            background: #666;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .exclude-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .exclude-input input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: #555;
+            color: white;
+        }
+        
+        .excluded-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        .excluded-tag {
+            background: #555;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid #ff0000;
+        }
+        
+        .remove-tag {
+            color: #ff0000;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        /* Canvas area - Now part of page flow */
+        .canvas-container {
+            flex: 1;
+            background: #2a2a2a;
+            border-radius: 16px;
+            overflow: visible;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        
+        #pdfCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 16px;
+        }
+        
+        #drawingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            border-radius: 16px;
+        }
+        
+        #drawingCanvas.active {
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+        
+        .page-status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #4caf50;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid #4caf50;
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        .skip-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        .mouse-hint {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0,0,0,0.7);
+            color: #ffaa00;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid #ffaa00;
+            z-index: 1000;
+            pointer-events: none;
+            font-family: monospace;
+        }
+        
+        .straight-line-hint {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0,0,0,0.7);
+            color: #ff0000;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            border: 1px solid #ff0000;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        
+        .save-status {
+            color: #4caf50;
+            font-size: 12px;
+            text-align: center;
+            padding: 8px;
+            background: #1e3a1e;
+            border-radius: 20px;
+            margin-top: 5px;
+        }
+        
+        .text-overlay {
+            position: fixed;
+            background: rgba(255,255,255,0.95);
+            border: 2px solid #ff0000;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 16px;
+            color: #000;
+            min-width: 200px;
+            z-index: 2000;
+            font-family: 'Segoe UI', sans-serif;
+            outline: none;
+        }
+    </style>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+<div class="game-container">
+    <div class="main-layout">
+        <!-- Left Sidebar - Sticky -->
+        <div class="sidebar">
+            <div class="user-section">
+                <select class="user-selector" id="userSelect">
+                    <option value="user1"><i class="fa-solid fa-user"></i> Account 1</option>
+                    <option value="user2"><i class="fa-solid fa-user"></i> Account 2</option>
+                </select>
+                <div class="user-stats">
+                    <span><i class="fa-solid fa-layer-group"></i> <span id="completedPages">0</span>/<span id="totalPages">0</span></span>
+                    <span><i class="fa-solid fa-pencil"></i> <span id="drawingsCount">0</span></span>
+                </div>
+            </div>
+            
+            <div class="page-section">
+                <div class="page-controls">
+                    <button class="page-btn" id="prevPage" disabled><i class="fa-solid fa-chevron-left"></i></button>
+                    <span class="page-display" id="pageDisplay">1 / ?</span>
+                    <button class="page-btn" id="nextPage"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="jump-controls">
+                    <input type="number" id="jumpInput" class="jump-input" placeholder="Page number" min="1">
+                    <button class="jump-btn" id="jumpBtn">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                
+                <div id="pageStatus" class="status-indicator status-incomplete">
+                    <i class="fa-regular fa-circle"></i> Not started
+                </div>
+            </div>
+            
+            <div class="page-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span><i class="fa-solid fa-paint-brush"></i> Tools</span>
+                    <button class="action-btn secondary" id="settingsBtn" style="width: auto; padding: 8px 15px;">
+                        <i class="fa-solid fa-sliders"></i> Settings
+                    </button>
+                </div>
+                
+                <div class="tools-grid">
+                    <div class="tool-item" id="drawBtn" title="Draw (D)">
+                        <i class="tool-icon fa-solid fa-pencil"></i>
+                        <span>Draw</span>
+                    </div>
+                    <div class="tool-item active" id="arrowBtn" title="Arrow (A)">
+                        <i class="tool-icon fa-solid fa-arrow-right"></i>
+                        <span>Arrow</span>
+                    </div>
+                    <div class="tool-item" id="textBtn" title="Text (T)">
+                        <i class="tool-icon fa-solid fa-font"></i>
+                        <span>Text</span>
+                    </div>
+                    <div class="tool-item" id="eraseBtn" title="Eraser (E)">
+                        <i class="tool-icon fa-solid fa-eraser"></i>
+                        <span>Erase</span>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button class="action-btn secondary" id="undoBtn" style="flex: 1;">
+                        <i class="fa-solid fa-rotate-left"></i> Undo
+                    </button>
+                    <button class="action-btn secondary" id="clearBtn" style="flex: 1;">
+                        <i class="fa-solid fa-trash-can"></i> Clear
+                    </button>
+                </div>
+            </div>
+            
+            <div class="save-status" id="saveStatus">
+                <i class="fa-solid fa-cloud"></i> Saved to cloud
+            </div>
+        </div>
+        
+        <!-- Right side - Canvas in normal page flow -->
+        <div class="canvas-container">
+            <canvas id="pdfCanvas"></canvas>
+            <canvas id="drawingCanvas"></canvas>
+            <div id="pageStatusBadge" class="page-status-badge" style="display: none;">
+                <i class="fa-regular fa-circle-check"></i> Completed
+            </div>
+            <div id="skipMessage" class="skip-message" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Mouse Hint -->
+<div class="mouse-hint" id="mouseHint">
+    <i class="fa-solid fa-mouse-pointer"></i> Left: Red | Right: Blue | Ctrl + Drag: Yellow
+</div>
+
+<!-- Straight line hint -->
+<div class="straight-line-hint" id="straightHint" style="display: none;">
+    <i class="fa-solid fa-arrow-up"></i> Shift + Draw = Straight line
+</div>
+
+<!-- Settings Modal -->
+<div class="modal" id="settingsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span><i class="fa-solid fa-gear"></i> Settings</span>
+            <button class="modal-close" id="closeSettings">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="settings-row">
+                <label><i class="fa-solid fa-palette"></i> Default Color</label>
+                <input type="color" id="colorPicker" value="#ff0000">
+            </div>
+            
+            <div class="settings-row">
+                <label><i class="fa-solid fa-pen-ruler"></i> Size</label>
+                <input type="range" id="lineWidth" min="1" max="20" value="3">
+                <span id="sizeValue">3px</span>
+            </div>
+            
+            <div class="settings-row">
+                <label><i class="fa-solid fa-ban"></i> Exclude</label>
+                <div style="flex: 1;">
+                    <div class="exclude-input">
+                        <input type="text" id="excludeInput" placeholder="e.g., 1,5,10-20">
+                        <button class="action-btn secondary" id="addExcludeBtn" style="width: auto; padding: 8px 15px;">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="excluded-tags" id="excludedTags"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+// Firebase Configuration (Replace with your own)
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase (if you have Firebase, otherwise uses localStorage)
+let firebaseAvailable = false;
+try {
+    firebase.initializeApp(firebaseConfig);
+    firebaseAvailable = true;
+    console.log('Firebase connected');
+} catch (e) {
+    console.log('Using localStorage fallback');
+}
+
+let db = firebaseAvailable ? firebase.firestore() : null;
+
+// Game state
+let pdfDoc = null;
+let currentPage = 1;
+let totalPages = 0;
+let scale = 1.5;
+let drawings = {};
+let history = {};
+let excludedPages = new Set();
+let currentTool = 'arrow';
+let isDrawing = false;
+let lastX, lastY;
+let startX, startY;
+let ctx, pdfCtx, drawingCtx;
+let pdfCanvas, drawingCanvas;
+let shiftPressed = false;
+let ctrlPressed = false;
+let currentUser = 'user1';
+let activeTextElement = null;
+let currentArrowColor = '#ff0000'; // Default red
+let rightClickEnabled = true;
+
+// Initialize
+window.onload = async () => {
+    pdfCanvas = document.getElementById('pdfCanvas');
+    drawingCanvas = document.getElementById('drawingCanvas');
+    pdfCtx = pdfCanvas.getContext('2d');
+    drawingCtx = drawingCanvas.getContext('2d');
+    
+    // Set arrow as default tool
+    setTool('arrow');
+    
+    // Load saved data for current user
+    await loadUserData();
+    
+    // Load PDF
+    try {
+        pdfDoc = await pdfjsLib.getDocument('chess_puzzles/puzzles.pdf').promise;
+        totalPages = pdfDoc.numPages;
+        document.getElementById('totalPages').textContent = totalPages;
+        updatePageDisplay();
+        
+        // Find first non-excluded page
+        currentPage = getNextAvailablePage(1);
+        
+        // Render first page
+        await renderPage(currentPage);
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        
+        // Disable context menu on canvas for right-click drawing
+        drawingCanvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        
+    } catch (error) {
+        alert('Error loading PDF. Make sure the file exists at chess_puzzles/puzzles.pdf');
+        console.error(error);
+    }
+};
+
+function setupEventListeners() {
+    // User selection
+    document.getElementById('userSelect').addEventListener('change', switchUser);
+    
+    // Page navigation
+    document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
+    document.getElementById('nextPage').addEventListener('click', () => changePage(1));
+    document.getElementById('jumpBtn').addEventListener('click', jumpToPage);
+    document.getElementById('jumpInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') jumpToPage();
+    });
+    
+    // Tools
+    document.getElementById('drawBtn').addEventListener('click', () => setTool('draw'));
+    document.getElementById('arrowBtn').addEventListener('click', () => setTool('arrow'));
+    document.getElementById('textBtn').addEventListener('click', () => setTool('text'));
+    document.getElementById('eraseBtn').addEventListener('click', () => setTool('erase'));
+    document.getElementById('undoBtn').addEventListener('click', undoLastAction);
+    document.getElementById('clearBtn').addEventListener('click', clearCurrentPage);
+    
+    // Settings
+    document.getElementById('settingsBtn').addEventListener('click', openSettings);
+    document.getElementById('closeSettings').addEventListener('click', closeSettings);
+    document.getElementById('addExcludeBtn').addEventListener('click', addExcludedPage);
+    
+    // Drawing events with mouse button detection
+    drawingCanvas.addEventListener('mousedown', startDrawingWithButton);
+    drawingCanvas.addEventListener('mousemove', draw);
+    drawingCanvas.addEventListener('mouseup', stopDrawing);
+    drawingCanvas.addEventListener('mouseleave', stopDrawing);
+    
+    // Touch support
+    drawingCanvas.addEventListener('touchstart', handleTouch);
+    drawingCanvas.addEventListener('touchmove', handleTouch);
+    drawingCanvas.addEventListener('touchend', stopDrawing);
+    
+    // Color/size
+    document.getElementById('colorPicker').addEventListener('input', updateSizeDisplay);
+    document.getElementById('lineWidth').addEventListener('input', updateSizeDisplay);
+    
+    // Click outside for text
+    document.addEventListener('mousedown', handleOutsideClick);
+}
+
+function startDrawingWithButton(e) {
+    e.preventDefault();
+    
+    // Determine arrow color based on mouse button and Ctrl key
+    if (currentTool === 'arrow') {
+        if (ctrlPressed) {
+            // Ctrl key pressed - yellow
+            currentArrowColor = '#ffff00';
+            document.getElementById('mouseHint').innerHTML = '<i class="fa-solid fa-mouse-pointer"></i> 🟡 Ctrl + Drag: Drawing YELLOW arrows';
+            setTimeout(() => {
+                document.getElementById('mouseHint').innerHTML = '<i class="fa-solid fa-mouse-pointer"></i> Left: Red | Right: Blue | Ctrl + Drag: Yellow';
+            }, 2000);
+        } else if (e.button === 2) {
+            // Right click - blue
+            currentArrowColor = '#0000ff';
+        } else if (e.button === 0) {
+            // Left click - red
+            currentArrowColor = '#ff0000';
+        }
+    } else {
+        currentArrowColor = document.getElementById('colorPicker').value;
+    }
+    
+    startDrawing(e);
+}
+
+function openSettings() {
+    document.getElementById('settingsModal').classList.add('show');
+    updateExcludedTags();
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+}
+
+function updateSizeDisplay() {
+    document.getElementById('sizeValue').textContent = document.getElementById('lineWidth').value + 'px';
+}
+
+async function switchUser(e) {
+    currentUser = e.target.value;
+    await loadUserData();
+    await renderPage(currentPage);
+    updateStats();
+}
+
+async function loadUserData() {
+    const storageKey = `chessDrawings_${currentUser}`;
+    const historyKey = `chessHistory_${currentUser}`;
+    const excludedKey = `excludedPages_${currentUser}`;
+    
+    if (firebaseAvailable && db) {
+        try {
+            const doc = await db.collection('users').doc(currentUser).get();
+            if (doc.exists) {
+                drawings = doc.data().drawings || {};
+                history = doc.data().history || {};
+                excludedPages = new Set(doc.data().excludedPages || []);
+            } else {
+                drawings = {};
+                history = {};
+                excludedPages = new Set();
+            }
+        } catch (e) {
+            console.log('Firebase error, using localStorage');
+            loadFromLocalStorage(storageKey, historyKey, excludedKey);
+        }
+    } else {
+        loadFromLocalStorage(storageKey, historyKey, excludedKey);
+    }
+    
+    updateExcludedTags();
+    updateStats();
+}
+
+function loadFromLocalStorage(storageKey, historyKey, excludedKey) {
+    const saved = localStorage.getItem(storageKey);
+    drawings = saved ? JSON.parse(saved) : {};
+    
+    const savedHistory = localStorage.getItem(historyKey);
+    history = savedHistory ? JSON.parse(savedHistory) : {};
+    
+    const savedExcluded = localStorage.getItem(excludedKey);
+    excludedPages = savedExcluded ? new Set(JSON.parse(savedExcluded)) : new Set();
+}
+
+async function saveUserData() {
+    const storageKey = `chessDrawings_${currentUser}`;
+    const historyKey = `chessHistory_${currentUser}`;
+    const excludedKey = `excludedPages_${currentUser}`;
+    
+    if (firebaseAvailable && db) {
+        try {
+            await db.collection('users').doc(currentUser).set({
+                drawings: drawings,
+                history: history,
+                excludedPages: Array.from(excludedPages),
+                lastUpdated: new Date().toISOString()
+            });
+        } catch (e) {
+            console.log('Firebase error, saving to localStorage');
+            saveToLocalStorage(storageKey, historyKey, excludedKey);
+        }
+    } else {
+        saveToLocalStorage(storageKey, historyKey, excludedKey);
+    }
+    
+    document.getElementById('saveStatus').innerHTML = '<i class="fa-solid fa-cloud"></i> Saved ' + new Date().toLocaleTimeString();
+    setTimeout(() => {
+        document.getElementById('saveStatus').innerHTML = '<i class="fa-solid fa-cloud"></i> Saved to cloud';
+    }, 2000);
+    
+    updateStats();
+}
+
+function saveToLocalStorage(storageKey, historyKey, excludedKey) {
+    localStorage.setItem(storageKey, JSON.stringify(drawings));
+    localStorage.setItem(historyKey, JSON.stringify(history));
+    localStorage.setItem(excludedKey, JSON.stringify(Array.from(excludedPages)));
+}
+
+function updateStats() {
+    const completed = Object.keys(drawings).filter(page => drawings[page] && drawings[page].length > 0).length;
+    document.getElementById('completedPages').textContent = completed;
+    
+    let totalDrawings = 0;
+    Object.values(drawings).forEach(page => {
+        if (page) totalDrawings += page.length;
+    });
+    document.getElementById('drawingsCount').textContent = totalDrawings;
+}
+
+function updatePageDisplay() {
+    document.getElementById('pageDisplay').textContent = `${currentPage} / ${totalPages}`;
+}
+
+function getCanvasCoordinates(clientX, clientY) {
+    const rect = drawingCanvas.getBoundingClientRect();
+    
+    const x = (clientX - rect.left) * (drawingCanvas.width / rect.width);
+    const y = (clientY - rect.top) * (drawingCanvas.height / rect.height);
+    
+    return { x, y };
+}
+
+function handleKeyDown(e) {
+    if (e.key === 'Shift') {
+        shiftPressed = true;
+        document.getElementById('straightHint').style.display = 'block';
+    }
+    
+    if (e.key === 'Control') {
+        ctrlPressed = true;
+        document.getElementById('mouseHint').innerHTML = '<i class="fa-solid fa-mouse-pointer"></i> 🟡 Ctrl pressed - Draw YELLOW arrows with left click';
+    }
+    
+    if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        undoLastAction();
+    }
+    
+    if (!e.ctrlKey && !e.altKey) {
+        switch(e.key.toLowerCase()) {
+            case 'd': setTool('draw'); break;
+            case 'a': setTool('arrow'); break;
+            case 't': setTool('text'); break;
+            case 'e': setTool('erase'); break;
+        }
+    }
+}
+
+function handleKeyUp(e) {
+    if (e.key === 'Shift') {
+        shiftPressed = false;
+        document.getElementById('straightHint').style.display = 'none';
+    }
+    
+    if (e.key === 'Control') {
+        ctrlPressed = false;
+        document.getElementById('mouseHint').innerHTML = '<i class="fa-solid fa-mouse-pointer"></i> Left: Red | Right: Blue | Ctrl + Drag: Yellow';
+    }
+}
+
+function setTool(tool) {
+    currentTool = tool;
+    document.querySelectorAll('.tool-item').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tool + 'Btn').classList.add('active');
+    
+    if (tool === 'draw' || tool === 'arrow' || tool === 'erase' || tool === 'text') {
+        drawingCanvas.classList.add('active');
+        drawingCanvas.style.cursor = tool === 'text' ? 'text' : 'crosshair';
+    } else {
+        drawingCanvas.classList.remove('active');
+    }
+    
+    removeTextInput();
+}
+
+function removeTextInput() {
+    if (activeTextElement) {
+        activeTextElement.remove();
+        activeTextElement = null;
+    }
+}
+
+function handleOutsideClick(e) {
+    if (activeTextElement && !activeTextElement.contains(e.target)) {
+        const text = activeTextElement.value;
+        if (text && text.trim() !== '') {
+            const rect = activeTextElement.getBoundingClientRect();
+            const coords = getCanvasCoordinates(rect.left, rect.top);
+            saveText(coords.x, coords.y, text);
+        }
+        removeTextInput();
+    }
+}
+
+function startDrawing(e) {
+    e.preventDefault();
+    
+    const coords = getCanvasCoordinates(e.clientX, e.clientY);
+    
+    lastX = coords.x;
+    lastY = coords.y;
+    startX = coords.x;
+    startY = coords.y;
+    isDrawing = true;
+    
+    if (currentTool === 'text') {
+        createTextInput(coords.x, coords.y, e.clientX, e.clientY);
+        isDrawing = false;
+        return;
+    }
+    
+    ctx = drawingCanvas.getContext('2d');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    if (currentTool === 'arrow') {
+        ctx.strokeStyle = currentArrowColor;
+        ctx.fillStyle = currentArrowColor;
+    } else {
+        ctx.strokeStyle = document.getElementById('colorPicker').value;
+    }
+    
+    ctx.lineWidth = document.getElementById('lineWidth').value;
+    
+    if (currentTool === 'erase') {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = document.getElementById('lineWidth').value * 2;
+    }
+    
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    
+    const coords = getCanvasCoordinates(e.clientX, e.clientY);
+    
+    // Straight line with shift
+    if (shiftPressed && (currentTool === 'draw' || currentTool === 'arrow' || currentTool === 'erase')) {
+        const dx = Math.abs(coords.x - startX);
+        const dy = Math.abs(coords.y - startY);
+        
+        if (dx > dy) {
+            coords.y = startY;
+        } else {
+            coords.x = startX;
+        }
+    }
+    
+    if (currentTool === 'arrow') {
+        redrawCurrentPage();
+        drawArrow(startX, startY, coords.x, coords.y, currentArrowColor);
+    } else {
+        ctx.lineTo(coords.x, coords.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(coords.x, coords.y);
+        lastX = coords.x;
+        lastY = coords.y;
+    }
+}
+
+function stopDrawing(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    
+    const clientX = e ? (e.clientX || (e.changedTouches && e.changedTouches[0].clientX)) : lastX;
+    const clientY = e ? (e.clientY || (e.changedTouches && e.changedTouches[0].clientY)) : lastY;
+    
+    if (clientX && clientY) {
+        const coords = getCanvasCoordinates(clientX, clientY);
+        
+        if (shiftPressed && (currentTool === 'draw' || currentTool === 'arrow' || currentTool === 'erase')) {
+            const dx = Math.abs(coords.x - startX);
+            const dy = Math.abs(coords.y - startY);
+            
+            if (dx > dy) {
+                coords.y = startY;
+            } else {
+                coords.x = startX;
+            }
+        }
+        
+        if (currentTool === 'arrow') {
+            if (Math.abs(coords.x - startX) > 5 || Math.abs(coords.y - startY) > 5) {
+                saveArrow(startX, startY, coords.x, coords.y, currentArrowColor);
+            }
+        } else if (currentTool === 'draw' || currentTool === 'erase') {
+            saveLine(startX, startY, coords.x, coords.y);
+        }
+    }
+    
+    isDrawing = false;
+    redrawCurrentPage();
+}
+
+function saveLine(x1, y1, x2, y2) {
+    if (!drawings[currentPage]) {
+        drawings[currentPage] = [];
+        history[currentPage] = [];
+    }
+    
+    saveToHistory();
+    
+    drawings[currentPage].push({
+        type: 'line',
+        x1: x1,
+        y1: y1,
+        x2: x2,
+        y2: y2,
+        color: currentTool === 'erase' ? '#ffffff' : document.getElementById('colorPicker').value,
+        width: currentTool === 'erase' ? document.getElementById('lineWidth').value * 2 : document.getElementById('lineWidth').value,
+        tool: currentTool
+    });
+    
+    saveUserData();
+    redrawCurrentPage();
+    updatePageStatus();
+}
+
+function drawArrow(x1, y1, x2, y2, color) {
+    const ctx = drawingCanvas.getContext('2d');
+    
+    // Draw line
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = document.getElementById('lineWidth').value;
+    ctx.stroke();
+    
+    // Draw arrowhead
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const arrowSize = 15;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - arrowSize * Math.cos(angle - 0.3), y2 - arrowSize * Math.sin(angle - 0.3));
+    ctx.lineTo(x2 - arrowSize * Math.cos(angle + 0.3), y2 - arrowSize * Math.sin(angle + 0.3));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+}
+
+function saveArrow(x1, y1, x2, y2, color) {
+    if (!drawings[currentPage]) {
+        drawings[currentPage] = [];
+        history[currentPage] = [];
+    }
+    
+    saveToHistory();
+    
+    drawings[currentPage].push({
+        type: 'arrow',
+        x1: x1,
+        y1: y1,
+        x2: x2,
+        y2: y2,
+        color: color,
+        width: document.getElementById('lineWidth').value
+    });
+    
+    saveUserData();
+    redrawCurrentPage();
+    updatePageStatus();
+}
+
+function createTextInput(x, y, clientX, clientY) {
+    removeTextInput();
+    
+    activeTextElement = document.createElement('input');
+    activeTextElement.type = 'text';
+    activeTextElement.className = 'text-overlay';
+    activeTextElement.style.left = clientX + 'px';
+    activeTextElement.style.top = clientY + 'px';
+    activeTextElement.placeholder = 'Type and press Enter';
+    activeTextElement.autofocus = true;
+    
+    document.body.appendChild(activeTextElement);
+    activeTextElement.focus();
+    
+    activeTextElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const text = activeTextElement.value;
+            if (text && text.trim() !== '') {
+                const rect = activeTextElement.getBoundingClientRect();
+                const coords = getCanvasCoordinates(rect.left, rect.top);
+                saveText(coords.x, coords.y, text);
+            }
+            removeTextInput();
+        }
+    });
+}
+
+function saveText(x, y, text) {
+    if (!drawings[currentPage]) {
+        drawings[currentPage] = [];
+        history[currentPage] = [];
+    }
+    
+    saveToHistory();
+    
+    drawings[currentPage].push({
+        type: 'text',
+        x: x,
+        y: y,
+        text: text,
+        color: document.getElementById('colorPicker').value,
+        fontSize: 20
+    });
+    
+    saveUserData();
+    redrawCurrentPage();
+    updatePageStatus();
+}
+
+function saveToHistory() {
+    if (!history[currentPage]) {
+        history[currentPage] = [];
+    }
+    
+    history[currentPage].push(JSON.parse(JSON.stringify(drawings[currentPage] || [])));
+    if (history[currentPage].length > 20) {
+        history[currentPage].shift();
+    }
+}
+
+function undoLastAction() {
+    if (history[currentPage] && history[currentPage].length > 0) {
+        const lastState = history[currentPage].pop();
+        drawings[currentPage] = lastState;
+        saveUserData();
+        redrawCurrentPage();
+        updatePageStatus();
+    }
+}
+
+async function renderPage(pageNum) {
+    if (excludedPages.has(pageNum)) {
+        showSkipMessage(pageNum);
+        return;
+    }
+    
+    hideSkipMessage();
+    currentPage = pageNum;
+    updatePageDisplay();
+    document.getElementById('jumpInput').value = '';
+    
+    try {
+        const page = await pdfDoc.getPage(pageNum);
+        
+        const viewport = page.getViewport({ scale });
+        pdfCanvas.width = viewport.width;
+        pdfCanvas.height = viewport.height;
+        drawingCanvas.width = viewport.width;
+        drawingCanvas.height = viewport.height;
+        
+        const renderContext = {
+            canvasContext: pdfCtx,
+            viewport: viewport
+        };
+        await page.render(renderContext).promise;
+        
+        redrawCurrentPage();
+        updateNavButtons();
+        updatePageStatus();
+        removeTextInput();
+    } catch (error) {
+        console.error('Error rendering page:', error);
+    }
+}
+
+function redrawCurrentPage() {
+    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    
+    if (drawings[currentPage]) {
+        drawings[currentPage].forEach(item => {
+            if (item.type === 'arrow') {
+                drawArrow(item.x1, item.y1, item.x2, item.y2, item.color);
+            } else if (item.type === 'text') {
+                drawingCtx.font = `${item.fontSize}px Arial`;
+                drawingCtx.fillStyle = item.color;
+                drawingCtx.fillText(item.text, item.x, item.y);
+            } else if (item.type === 'line') {
+                drawingCtx.beginPath();
+                drawingCtx.moveTo(item.x1, item.y1);
+                drawingCtx.lineTo(item.x2, item.y2);
+                drawingCtx.strokeStyle = item.color;
+                drawingCtx.lineWidth = item.width;
+                drawingCtx.stroke();
+            }
+        });
+    }
+}
+
+function updatePageStatus() {
+    const hasDrawings = drawings[currentPage] && drawings[currentPage].length > 0;
+    const statusEl = document.getElementById('pageStatus');
+    const badgeEl = document.getElementById('pageStatusBadge');
+    
+    if (hasDrawings) {
+        statusEl.className = 'status-indicator status-completed';
+        statusEl.innerHTML = '<i class="fa-regular fa-circle-check"></i> Completed';
+        badgeEl.style.display = 'block';
+    } else {
+        statusEl.className = 'status-indicator status-incomplete';
+        statusEl.innerHTML = '<i class="fa-regular fa-circle"></i> Not started';
+        badgeEl.style.display = 'none';
+    }
+}
+
+function clearCurrentPage() {
+    if (confirm('Clear all drawings on this page?')) {
+        saveToHistory();
+        drawings[currentPage] = [];
+        saveUserData();
+        redrawCurrentPage();
+        updatePageStatus();
+    }
+}
+
+function changePage(delta) {
+    let newPage = currentPage + delta;
+    newPage = getNextAvailablePage(newPage, delta > 0 ? 1 : -1);
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        renderPage(newPage);
+    }
+}
+
+function jumpToPage() {
+    const input = document.getElementById('jumpInput');
+    const pageNum = parseInt(input.value);
+    
+    if (pageNum && pageNum >= 1 && pageNum <= totalPages) {
+        if (!excludedPages.has(pageNum)) {
+            renderPage(pageNum);
+        } else {
+            alert('This page is excluded. Remove it from excluded list first.');
+        }
+    } else {
+        alert(`Please enter a valid page number (1-${totalPages})`);
+    }
+    input.value = '';
+}
+
+function getNextAvailablePage(startPage, direction = 1) {
+    let page = startPage;
+    while (page >= 1 && page <= totalPages) {
+        if (!excludedPages.has(page)) {
+            return page;
+        }
+        page += direction;
+    }
+    return startPage;
+}
+
+function showSkipMessage(pageNum) {
+    document.getElementById('skipMessage').style.display = 'block';
+    document.getElementById('skipMessage').innerHTML = `<i class="fa-solid fa-ban"></i> Page ${pageNum} is excluded<br>Click navigation to skip`;
+}
+
+function hideSkipMessage() {
+    document.getElementById('skipMessage').style.display = 'none';
+}
+
+function addExcludedPage() {
+    const input = document.getElementById('excludeInput');
+    const value = input.value.trim();
+    
+    if (value) {
+        if (value.includes('-')) {
+            const [start, end] = value.split('-').map(Number);
+            for (let i = start; i <= end; i++) {
+                if (i >= 1 && i <= totalPages) excludedPages.add(i);
+            }
+        } else {
+            const page = Number(value);
+            if (page >= 1 && page <= totalPages) excludedPages.add(page);
+        }
+        
+        saveUserData();
+        updateExcludedTags();
+        input.value = '';
+    }
+}
+
+function updateExcludedTags() {
+    const container = document.getElementById('excludedTags');
+    if (excludedPages.size === 0) {
+        container.innerHTML = '<span style="color: #aaa;"><i class="fa-regular fa-circle"></i> No excluded pages</span>';
+        return;
+    }
+    
+    const sorted = Array.from(excludedPages).sort((a,b) => a - b);
+    container.innerHTML = sorted.map(page => `
+        <span class="excluded-tag">
+            ${page}
+            <span class="remove-tag" onclick="removeExcludedPage(${page})">&times;</span>
+        </span>
+    `).join('');
+}
+
+function removeExcludedPage(page) {
+    excludedPages.delete(page);
+    saveUserData();
+    updateExcludedTags();
+}
+
+function updateNavButtons() {
+    document.getElementById('prevPage').disabled = currentPage <= 1;
+    document.getElementById('nextPage').disabled = currentPage >= totalPages;
+}
+
+function handleTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        button: 0
+    });
+    drawingCanvas.dispatchEvent(mouseEvent);
+}
+
+window.removeExcludedPage = removeExcludedPage;
+</script>
+</body>
+</html>
