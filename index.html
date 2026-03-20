@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Puzzle Solver - Multi-User Drawing</title>
-    <link rel="icon" type="image/x-icon" href="chess_puzzles/favicon.ico">
-    <link rel="shortcut icon" type="image/x-icon" href="chess_puzzles/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="chess_puzzles/chess_puzzles/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="chess_puzzles/chess_puzzles/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { 
@@ -169,19 +169,20 @@
             background: #ff0000;
             border: none;
             color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
             cursor: pointer;
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
             transition: 0.2s;
         }
         
         .jump-btn:hover {
             background: #ff3333;
-            transform: scale(1.02);
+            transform: scale(1.05);
         }
         
         .status-indicator {
@@ -449,21 +450,6 @@
             pointer-events: none;
         }
         
-        .mouse-hint {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
-            background: rgba(0,0,0,0.7);
-            color: #ffaa00;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            border: 1px solid #ffaa00;
-            z-index: 1000;
-            pointer-events: none;
-            font-family: monospace;
-        }
-        
         .straight-line-hint {
             position: fixed;
             bottom: 30px;
@@ -594,11 +580,6 @@
     </div>
 </div>
 
-<!-- Mouse Hint -->
-<div class="mouse-hint" id="mouseHint">
-    <i class="fa-solid fa-mouse-pointer"></i> Left: Red | Right: Blue | Ctrl + Drag: Yellow
-</div>
-
 <!-- Straight line hint -->
 <div class="straight-line-hint" id="straightHint" style="display: none;">
     <i class="fa-solid fa-arrow-up"></i> Shift + Draw = Straight line
@@ -684,7 +665,6 @@ let ctrlPressed = false;
 let currentUser = 'user1';
 let activeTextElement = null;
 let currentArrowColor = '#ff0000'; // Default red
-let rightClickEnabled = true;
 
 // Initialize
 window.onload = async () => {
@@ -780,18 +760,17 @@ function startDrawingWithButton(e) {
     
     // Determine arrow color based on mouse button and Ctrl key
     if (currentTool === 'arrow') {
-        if (ctrlPressed) {
-            // Ctrl key pressed - yellow
+        if (ctrlPressed && e.button === 2) {
+            // Ctrl + Right click - green
+            currentArrowColor = '#00ff00';
+        } else if (ctrlPressed && e.button === 0) {
+            // Ctrl + Left click - yellow
             currentArrowColor = '#ffff00';
-            document.getElementById('mouseHint').innerHTML = '<i class="fa-solid fa-mouse-pointer"></i> 🟡 Ctrl + Drag: Drawing YELLOW arrows';
-            setTimeout(() => {
-                document.getElementById('mouseHint').innerHTML = '<i class="fa-solid fa-mouse-pointer"></i> Left: Red | Right: Blue | Ctrl + Drag: Yellow';
-            }, 2000);
         } else if (e.button === 2) {
-            // Right click - blue
+            // Right click only - blue
             currentArrowColor = '#0000ff';
         } else if (e.button === 0) {
-            // Left click - red
+            // Left click only - red
             currentArrowColor = '#ff0000';
         }
     } else {
@@ -928,7 +907,6 @@ function handleKeyDown(e) {
     
     if (e.key === 'Control') {
         ctrlPressed = true;
-        document.getElementById('mouseHint').innerHTML = '<i class="fa-solid fa-mouse-pointer"></i> 🟡 Ctrl pressed - Draw YELLOW arrows with left click';
     }
     
     if (e.ctrlKey && e.key === 'z') {
@@ -954,7 +932,6 @@ function handleKeyUp(e) {
     
     if (e.key === 'Control') {
         ctrlPressed = false;
-        document.getElementById('mouseHint').innerHTML = '<i class="fa-solid fa-mouse-pointer"></i> Left: Red | Right: Blue | Ctrl + Drag: Yellow';
     }
 }
 
